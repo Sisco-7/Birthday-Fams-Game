@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Match Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #FFB6C1, #FFD700);
+            overflow: hidden;
+        }
+        .game-container {
+            display: grid;
+            gap: 10px;
+            margin: 20px;
+            transition: grid-template-columns 0.3s ease;
+        }
+        .card {
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transform: perspective(600px) rotateY(0deg);
+            transition: transform 0.6s;
+        }
+        .card.flipped {
+            transform: perspective(600px) rotateY(180deg);
+        }
+        .card img {
+            width: 80%;
+            height: 80%;
+            display: none;
+        }
+        .card.flipped img {
+            display: block;
+        }
+        .scoreboard, .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+        .controls {
+            top: 100px;
+            left: 20px;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #FF6347;
+            color: white;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #FF4500;
+        }
+        .birthday-message {
+            font-size: 24px;
+            color: #FF1493;
+            font-weight: bold;
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        .balloon {
+            position: absolute;
+            bottom: 10%;
+            animation: float 4s infinite ease-in-out;
+        }
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="birthday-message">
+        Happy Birthday! Sisco Ask 🎉🎂
+    </div>
+    <div class="scoreboard">
+        Moves: <span id="moves">0</span>
+        <br>
+        Time: <span id="timer">0</span> seconds
+    </div>
+    <div class="controls">
+        <label for="difficulty">Difficulty:</label>
+        <select id="difficulty">
+            <option value="2">Sisco <b>Easy</b></option>
+            <option value="4">Sisqo <b>Medium</b> </option>
+            <option value="8">Sisco Ask <b>Hard</b> </option>
+        </select>
+        <button class="btn" onclick="startGame()">Start New Game</button>
+    </div>
+    <div class="game-container" id="game-container"></div>
+
+    
+    <script>
+        let gridSize = 4;
+        const difficultySelect = document.getElementById("difficulty");
+        let images = [
+            "🎉", "🎂", "🎁", "🎈", "🌟", "🎶", "🍰", "🍩", 
+            "🎉", "🎂", "🎁", "🎈", "🌟", "🎶", "🍰", "🍩"
+        ];
+        
+        let shuffledImages = [];
+        let gameContainer = document.getElementById("game-container");
+        let movesCounter = document.getElementById("moves");
+        let timerDisplay = document.getElementById("timer");
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timer = 0;
+        let timerInterval;
+
+        function startTimer() {
+            timer = 0;
+            timerDisplay.textContent = timer;
+            timerInterval = setInterval(() => {
+                timer++;
+                timerDisplay.textContent = timer;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function createCard(image) {
+            const card = document.createElement("div");
+            card.classList.add("card");
+            card.innerHTML = `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='55' font-size='60'%3E${image}%3C/text%3E%3C/svg%3E" alt="card image">`;
+            card.addEventListener("click", () => {
+                if (card.classList.contains("flipped") || flippedCards.length === 2) return;
+                flipCard(card);
+            });
+            return card;
+        }
+
+        function flipCard(card) {
+            card.classList.add("flipped");
+            flippedCards.push(card);
+            if (flippedCards.length === 2) {
+                moves++;
+                movesCounter.textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const img1 = card1.querySelector("img").src;
+            const img2 = card2.querySelector("img").src;
+
+            if (img1 === img2) {
+                matchedPairs++;
+                flippedCards = [];
+                if (matchedPairs === shuffledImages.length / 2) {
+                    stopTimer();
+                    alert(`You won! Moves: ${moves}, Time: ${timer} seconds`);
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove("flipped");
+                    card2.classList.remove("flipped");
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function shuffleImages() {
+            shuffledImages = images.slice(0, gridSize * gridSize / 2);
+            shuffledImages = [...shuffledImages, ...shuffledImages];
+            shuffledImages = shuffledImages.sort(() => Math.random() - 0.5);
+        }
+
+        function setGameSize() {
+            const gridTemplate = `repeat(${gridSize}, 100px)`;
+            gameContainer.style.gridTemplateColumns = gridTemplate;
+        }
+
+        function startGame() {
+            gridSize = parseInt(difficultySelect.value);
+            setGameSize();
+            shuffleImages();
+            gameContainer.innerHTML = "";
+            matchedPairs = 0;
+            moves = 0;
+            movesCounter.textContent = moves;
+            shuffledImages.forEach(image => {
+                const card = createCard(image);
+                gameContainer.appendChild(card);
+            });
+            startTimer();
+        }
+
+        startGame(); // Start the game with default settings
+    </script>
+</body>
+</html>
